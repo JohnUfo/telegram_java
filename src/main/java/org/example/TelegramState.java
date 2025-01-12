@@ -3,17 +3,16 @@ package org.example;
 public class TelegramState {
     private Long chatId;
     private String state = "START";
-    private String firstName;
-    private String lastName;
+    private User user;
 
-    public TelegramState(Long chatId, String state, String firstName, String lastName) {
+    public TelegramState(Long chatId, String state, User user) {
         this.chatId = chatId;
         this.state = state;
-        this.firstName = firstName;
-        this.lastName = lastName;
+        this.user = user;
     }
 
-    public TelegramState() {}
+    public TelegramState() {
+    }
 
     public Long getChatId() {
         return chatId;
@@ -31,19 +30,20 @@ public class TelegramState {
         this.state = state;
     }
 
-    public String getFirstName() {
-        return firstName;
+    public User getUser() {
+        return user;
     }
 
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
+    @Override
+    public String toString() {
+        return "TelegramState{" +
+                "chatId=" + chatId +
+                ", state='" + state + '\'' +
+                ", user=" + user +
+                '}';
     }
 }
