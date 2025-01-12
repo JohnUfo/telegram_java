@@ -4,6 +4,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
@@ -26,20 +27,24 @@ public class MyBot extends TelegramLongPollingBot {
 
             sendMessage.setChatId(chatId);
 
+            if (update.getMessage().getText() != null && update.getMessage().getText().equals("/start")) {
+                state = UserState.START;
+            }
+
             try {
                 switch (state) {
-                    case "START":
+                    case UserState.START:
                         sendMessage.setText("Please enter your first name");
-                        state = "ENTER_FIRSTNAME";
+                        state = UserState.FIRST_NAME;
                         break;
 
-                    case "ENTER_FIRSTNAME":
+                    case UserState.FIRST_NAME:
                         firstName = text;
                         sendMessage.setText("Please enter your last name");
-                        state = "ENTER_LASTNAME";
+                        state = UserState.LAST_NAME;
                         break;
 
-                    case "ENTER_LASTNAME":
+                    case UserState.LAST_NAME:
                         lastName = text;
                         sendMessage.setText("Please share your phone number");
                         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
@@ -53,14 +58,20 @@ public class MyBot extends TelegramLongPollingBot {
 
                         replyKeyboardMarkup.setKeyboard(Collections.singletonList(keyboardRow));
                         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                        state = "SHARE_PHONE_NUMBER";
+                        state = UserState.SHARE_PHONE_NUMBER;
                         break;
 
-                    case "SHARE_PHONE_NUMBER":
+                    case UserState.SHARE_PHONE_NUMBER:
                         if (update.getMessage().hasContact() && update.getMessage().getContact() != null) {
                             String phoneNumber = update.getMessage().getContact().getPhoneNumber();
                             sendMessage.setText("Thank you! We received your phone number: " + phoneNumber);
-                            state = "START";
+
+                            // Remove the reply keyboard
+                            ReplyKeyboardRemove removeKeyboard = new ReplyKeyboardRemove();
+                            removeKeyboard.setRemoveKeyboard(true);
+                            sendMessage.setReplyMarkup(removeKeyboard);
+
+                            state = UserState.START;
                         } else {
                             sendMessage.setText("Please share your phone number using the button.");
                         }
@@ -68,7 +79,7 @@ public class MyBot extends TelegramLongPollingBot {
 
                     default:
                         sendMessage.setText("An error occurred. Please start again.");
-                        state = "START";
+                        state = UserState.START;
                         break;
                 }
 
