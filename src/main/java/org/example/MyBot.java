@@ -8,13 +8,13 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRem
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 public class MyBot extends TelegramLongPollingBot {
 
-    String state = "START";
-    String firstName = "";
-    String lastName = "";
+    List<TelegramState> users = new ArrayList<>();
 
     @Override
     public void onUpdateReceived(Update update) {
@@ -25,27 +25,30 @@ public class MyBot extends TelegramLongPollingBot {
             String text = update.getMessage().getText();
             Long chatId = update.getMessage().getChatId();
 
+            TelegramState currentUser = findUser(chatId);
+
+
             sendMessage.setChatId(chatId);
 
             if (update.getMessage().getText() != null && update.getMessage().getText().equals("/start")) {
-                state = UserState.START;
+                currentUser.setState(UserState.START);
             }
 
             try {
-                switch (state) {
+                switch (currentUser.getState()) {
                     case UserState.START:
                         sendMessage.setText("Please enter your first name");
-                        state = UserState.FIRST_NAME;
+                        currentUser.setState(UserState.FIRST_NAME);
                         break;
 
                     case UserState.FIRST_NAME:
-                        firstName = text;
+                        currentUser.setFirstName(text);
                         sendMessage.setText("Please enter your last name");
-                        state = UserState.LAST_NAME;
+                        currentUser.setState(UserState.LAST_NAME);
                         break;
 
                     case UserState.LAST_NAME:
-                        lastName = text;
+                        currentUser.setLastName(text);
                         sendMessage.setText("Please share your phone number");
                         ReplyKeyboardMarkup replyKeyboardMarkup = new ReplyKeyboardMarkup();
                         replyKeyboardMarkup.setResizeKeyboard(true);
@@ -58,7 +61,7 @@ public class MyBot extends TelegramLongPollingBot {
 
                         replyKeyboardMarkup.setKeyboard(Collections.singletonList(keyboardRow));
                         sendMessage.setReplyMarkup(replyKeyboardMarkup);
-                        state = UserState.SHARE_PHONE_NUMBER;
+                        currentUser.setState(UserState.SHARE_PHONE_NUMBER);
                         break;
 
                     case UserState.SHARE_PHONE_NUMBER:
@@ -66,12 +69,11 @@ public class MyBot extends TelegramLongPollingBot {
                             String phoneNumber = update.getMessage().getContact().getPhoneNumber();
                             sendMessage.setText("Thank you! We received your phone number: " + phoneNumber);
 
-                            // Remove the reply keyboard
                             ReplyKeyboardRemove removeKeyboard = new ReplyKeyboardRemove();
                             removeKeyboard.setRemoveKeyboard(true);
                             sendMessage.setReplyMarkup(removeKeyboard);
 
-                            state = UserState.START;
+                            currentUser.setState(UserState.START);
                         } else {
                             sendMessage.setText("Please share your phone number using the button.");
                         }
@@ -79,7 +81,7 @@ public class MyBot extends TelegramLongPollingBot {
 
                     default:
                         sendMessage.setText("An error occurred. Please start again.");
-                        state = UserState.START;
+                        currentUser.setState(UserState.START);
                         break;
                 }
 
@@ -90,7 +92,24 @@ public class MyBot extends TelegramLongPollingBot {
         }
     }
 
-    ///////////////////////////
+
+    //////////////////////////////////////////
+
+    private TelegramState findUser(Long chatId) {
+        TelegramState currentUser = null;
+        for (TelegramState user : users) {
+            if (user.getChatId().equals(chatId)) {
+                currentUser = user;
+            }
+        }
+
+        if (currentUser == null) {
+            currentUser = new TelegramState();
+            currentUser.setChatId(chatId);
+            users.add(currentUser);
+        }
+        return currentUser;
+    }
 
     @Override
     public String getBotUsername() {
